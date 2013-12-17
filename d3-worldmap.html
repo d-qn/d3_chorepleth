@@ -1,7 +1,16 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
-<title>D3 Geo World Map Template</title>
+<title>Duc's D3 Geo World Map Template</title>
 <style>
+
+.country {
+  fill: none;
+  stroke: #fff;
+  stroke-width: .3px;
+  stroke-opacity: .9;
+}
+
+
 .country:hover{
   stroke: #fff;
   stroke-width: 1px;
@@ -23,9 +32,9 @@
 div.tooltip {
   color: #222;
   background: #fff;
-  padding: .3em;
+  padding: .2em;
   text-shadow: #f5f5f5 0 1px 0;
-  border-radius: 8px;
+  border-radius: 2px;
   box-shadow: 0px 0px 2px 0px #a6a6a6;
   opacity: 0.9;
   position: absolute;
@@ -39,8 +48,10 @@ div.tooltip {
   </p>
   <h3>To Do</h3>
   <p>
-	  - tooltip value if undefined
-	  -
+	  - zoom on click<br>
+	  - tooltip on zoom<br>
+	  - tooltip value if undefined<br>
+
   </p>
   <a href="http://techslides.com/responsive-d3-map-with-zoom-and-pan-limits/">Back to Article</a>
 
@@ -50,6 +61,12 @@ div.tooltip {
 <script src="js/queue.min.js"></script>
 <script src="js/topojson.v1.min.js"></script>
 <script>
+
+// variables
+var mapFile = "data/world-110m.json";
+var dataFile = "data/gdp2012.tsv";
+var dataTextLabel = "gdp per capita: ";
+
 d3.select(window).on("resize", throttle);
 
 var zoom = d3.behavior.zoom()
@@ -69,13 +86,23 @@ var color = d3.scale.quantize()
     .range(["rgb(198,219,239)", "rgb(158,202,225)","rgb(107,174,214)","rgb(66,146,198)",
     "rgb(33,113,181)","rgb(8,81,156)","rgb(8,48,107)"]);
 
+// defer load of json and data
+queue()
+   .defer(d3.json, mapFile)
+   .defer(d3.tsv, dataFile, function(d) {
+       dictValue[d.id] = +d.value;
+       dictName[d.id] = "" +d.name;
+   })
+   .await(ready);
+
 var dictValue = {};
 var dictName = {};
 
 function setup(width,height){
   var projection = d3.geo.mercator()
-    .translate([-50, 75])
-    .scale(width / 2 / Math.PI);
+  //var projection = d3.geo.conicEqualArea()
+    .translate([-75, 50])
+    .scale(width / 2.2 / Math.PI);
 
   path = d3.geo.path()
       .projection(projection);
@@ -90,13 +117,6 @@ function setup(width,height){
   g = svg.append("g");
 }
 
- queue()
-    .defer(d3.json, "data/world-110m.json")
-    .defer(d3.tsv, "data/gdp2012.tsv", function(d) {
-        dictValue[d.id] = +d.value;
-        dictName[d.id] = "" +d.name;
-    })
-    .await(ready);
 
 
 function ready(error, world) {
@@ -127,7 +147,7 @@ function draw(topo) {
       });
 
   //ofsets plus width/height of transform, plsu 20 px of padding, plus 20 extra for tooltip offset off mouse
-  var offsetL = document.getElementById('container').offsetLeft+(width/2)+40;
+  var offsetL = document.getElementById('container').offsetLeft+(width/2)+20;
   var offsetT = document.getElementById('container').offsetTop+(height/2)+20;
 
   //tooltips
@@ -135,9 +155,9 @@ function draw(topo) {
     .on("mousemove", function(d,i) {
       var mouse = d3.mouse(svg.node()).map( function(d) { return parseInt(d); } );
         tooltip
-          .attr("style", "left:"+(mouse[0]+offsetL)+"px;top:"+(mouse[1]+offsetT)+"px")
-          .html(dictName[d.id] + "<br>" + dictValue[d.id])
-          .classed("hidden", false);
+          .classed("hidden", false)
+          //.attr("style", "left:"+(mouse[0]+offsetL)+"px;top:"+(mouse[1]+offsetT)+"px")
+          .html(dictName[d.id] + "<br><br>" + dataTextLabel + dictValue[d.id])
 
       })
       .on("mouseout",  function(d,i) {
