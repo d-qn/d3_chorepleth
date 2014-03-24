@@ -21,9 +21,9 @@
 
 #container {
   margin:10px 10%;
-  padding:20px;
-  border:2px solid #d0d0d0;
-  border-radius: 4px;
+  padding:15px;
+  border:1px solid #d0d0d0;
+  border-radius: 5px;
   height:100%;
 }
 .hidden {
@@ -34,23 +34,22 @@ div.tooltip {
   background: #fff;
   padding: .2em;
   text-shadow: #f5f5f5 0 1px 0;
-  border-radius: 2px;
+  border-radius: 3px;
   box-shadow: 0px 0px 2px 0px #a6a6a6;
-  opacity: 0.9;
+  opacity: 0.8;
   position: absolute;
 }
 </style>
 </head>
 <body>
 
-  <h1>D3 WorldMap Template</h1>
+  <h1>Duc's D3 WorldMap Template</h1>
   <p>World map based mbostock TopoJson 110m world map. The tooltip displying country names and different colors based on country location.  The map is responsive and it has a zoom limit as well as pan/drag limit.  The map comes with country tooltips and resize events have delayed/throttled JavaScript execution.
   </p>
   <h3>To Do</h3>
   <p>
-	  - zoom on click<br>
-	  - tooltip on zoom<br>
-	  - tooltip value if undefined<br>
+	  - tooltip and country color if value undefined<br>
+	  - tooltip location<br>
 
   </p>
   <a href="http://techslides.com/responsive-d3-map-with-zoom-and-pan-limits/">Back to Article</a>
@@ -62,10 +61,16 @@ div.tooltip {
 <script src="js/topojson.v1.min.js"></script>
 <script>
 
-// variables
+////////////////////////////////////    VARIABLES   ////////////////////////////////////////////
 var mapFile = "data/world-110m.json";
 var dataFile = "data/gdp2012.tsv";
-var dataTextLabel = "gdp per capita: ";
+var dataTextLabel = "GDP per capita (USD): ";
+var sigNumber = 6;
+var colorPalette = 	["rgb(198,219,239)", "rgb(158,202,225)","rgb(107,174,214)","rgb(66,146,198)","rgb(33,113,181)","rgb(8,81,156)","rgb(8,48,107)"]
+
+//["rgb(247,251,255)", "rgb(222,235,247)", "rgb(198,219,239)", "rgb(158,202,225)", "rgb(107,174,214)", "rgb(66,146,198)", "rgb(33,113,181)", "rgb(8,81,156)", "rgb(8,48,107)"]
+
+
 
 d3.select(window).on("resize", throttle);
 
@@ -83,14 +88,15 @@ var tooltip = d3.select("#container").append("div").attr("class", "tooltip hidde
 setup(width,height);
 
 var color = d3.scale.quantize()
-    .range(["rgb(198,219,239)", "rgb(158,202,225)","rgb(107,174,214)","rgb(66,146,198)",
-    "rgb(33,113,181)","rgb(8,81,156)","rgb(8,48,107)"]);
+    .range(colorPalette);
 
 // defer load of json and data
 queue()
    .defer(d3.json, mapFile)
    .defer(d3.tsv, dataFile, function(d) {
-       dictValue[d.id] = +d.value;
+	   val = +d.value;
+	   val = val.toPrecision(sigNumber)
+       dictValue[d.id] = val;
        dictName[d.id] = "" +d.name;
    })
    .await(ready);
@@ -101,8 +107,9 @@ var dictName = {};
 function setup(width,height){
   var projection = d3.geo.mercator()
   //var projection = d3.geo.conicEqualArea()
-    .translate([-75, 50])
-    .scale(width / 2.2 / Math.PI);
+    .translate([-55, 50])
+    .scale(width / 2.2 / Math.PI)
+    .precision(.1);
 
   path = d3.geo.path()
       .projection(projection);
